@@ -10,6 +10,9 @@
 
 SESSION_EXECUTION_AUTHORIZATION: user requested executing, merging, testing and repairing the fleet recovery decisions on 2026-10-31. Install the published native governance 0.20.119 at 07d2cf4c34ea308929a6a2c78497f20901a58b3e to replace the incomplete registration scaffold. Preserve original local files in an external digest-bound secret-scanned snapshot. The allocator owns this canonical checkout and ticket identity; only the actual controller lease authorizes implementation.
 
+The wheel must include the governance pytest bridge so the installed pytest
+console entry point can import it independently of the working directory.
+
 ## Acceptance criteria
 
 - [x] AC-01: Complete pinned governance package and prerequisite files are present.

@@ -21,6 +21,9 @@ classifiers = [
 ]
 dependencies = []
 
+[tool.setuptools]
+py-modules = ["wellmanifest_governance"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["code2graph*"]
