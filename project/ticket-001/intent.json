@@ -143,7 +143,10 @@
     "scripts/install-agent-hosts.sh",
     "scripts/runtime.sh",
     "wellmanifest_governance.py",
-    "worktree-guard.yaml"
+    "worktree-guard.yaml",
+    ".governance/error/GOV-IDLE-TAKEOVER.md",
+    ".governance/idle_takeover.py",
+    ".governance/terminal_lease_release.py"
   ],
   "forbiddenPaths": [
     "project/ticket-*/user-*.md"
@@ -155,11 +158,13 @@
   "delivery": {
     "acceptedBaseSha": "ca230d2cc2b311020769b55b005c568ccb195d55",
     "targetBranch": "main",
-    "outcome": "Install the complete immutable native governance 0.20.119, verify the product and publish through independent protected review.",
+    "outcome": "Complete the original initial adoption with independently published native governance0.20.129, verify unchanged product behavior through checkout-bound Wellman execution, separately qualify the protected OneDev runtime, then obtain fresh exact-head independent approval and protected merge.",
     "nonGoals": [
       "Change product runtime or dependencies",
       "Discard unknown local work",
-      "Waive protected checks"
+      "Waive protected checks",
+      "Do not erase, reset or waive the original signed119 review findings.",
+      "Do not use the editable global wellman wrapper, another project environment or unmediated candidate Python/pytest."
     ],
     "complexity": "L",
     "estimatedMinutes": 90,
@@ -172,11 +177,11 @@
     "standardAdoption": {
       "sourceRepository": "wellmanifest/new-project",
       "fromRevision": null,
-      "toRevision": "07d2cf4c34ea308929a6a2c78497f20901a58b3e"
+      "toRevision": "82fd58dbe175f90146ed49c07fa86fac91de00d5"
     },
     "architecture": {
       "status": "accepted",
-      "decision": "Install the published package as one immutable adoption, retaining source behavior and existing product CI.",
+      "decision": "Keep the accepted original main base and initial-adoption fromRevision=null: this PR is still the first adoption relative to main. Replace only the immutable managed closure from the local119 candidate with published129 through native Goal, including the three exact newly published managed targets. Preserve target overrides and product source/dependencies. Change only standard/revision in pyproject tool.wellmanifest to match the package through its closed native packaging binding. Use the independently approved fullWellman d8c7a0a runtime, local checkout .venv and private execution scratch/receipts; immutable operator tools and control-plane receipts have distinct declared roles. The original29-finding signed119 review remains intact; source fixes and local PASS never constitute approval. Independently qualify exact129 package and manifest pins in OneDev before trusting its current-head result.",
       "components": [
         {
           "name": "governance",
@@ -314,7 +319,10 @@
             "scripts/install-agent-hosts.sh",
             "scripts/runtime.sh",
             "wellmanifest_governance.py",
-            "worktree-guard.yaml"
+            "worktree-guard.yaml",
+            ".governance/error/GOV-IDLE-TAKEOVER.md",
+            ".governance/idle_takeover.py",
+            ".governance/terminal_lease_release.py"
           ]
         }
       ],
@@ -333,24 +341,25 @@
       {
         "criterion": "AC-01",
         "commands": [
-          "Validate the complete immutable managed-file closure"
+          "goal governance adopt --source-revision 82fd58dbe175f90146ed49c07fa86fac91de00d5 --target-root . --check"
         ],
-        "evidence": "Local adoption check and independent protected validation"
+        "evidence": "Complete source129 managed closure, actual official publication and exact target metadata bindings; preserve product dependency declarations."
       },
       {
         "criterion": "AC-02",
         "commands": [
-          "python -m pytest -q",
-          "./project/governance-check.sh"
+          "wellman run --root . -- python -m pytest -q",
+          "project/governance-check.sh through the pinned canonical Wellman Python dispatch"
         ],
-        "evidence": "External local verification logs"
+        "evidence": "Actual checkout-local interpreter/source/temp/cache binding and real command/exit receipts; product tests and deterministic managed gate pass."
       },
       {
         "criterion": "AC-03",
         "commands": [
-          "Invoke protected independent Validator on the frozen PR head"
+          "Protected OneDev exact129 runtime qualification",
+          "Invoke independent Validator on the frozen current PR head"
         ],
-        "evidence": "Trusted merge receipt and readback"
+        "evidence": "Actual runtime deployment and exact repository/base/head/profile result, then current-head trusted approval and controller-owned merge; previous signed refusal unchanged."
       }
     ]
   }

@@ -2,6 +2,12 @@
   "schema": "new-project.package-manifest/v1",
   "files": [
     {
+      "source": "scripts/terminal_lease_release.py",
+      "target": ".governance/terminal_lease_release.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
       "source": "scripts/snapshot_allocation.py",
       "target": ".governance/snapshot_allocation.py",
       "strategy": "managed",
@@ -294,6 +300,18 @@
       "target": ".governance/change_lease_check.py",
       "strategy": "managed",
       "executable": true
+    },
+    {
+      "source": "scripts/idle_takeover.py",
+      "target": ".governance/idle_takeover.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "error/GOV-IDLE-TAKEOVER.md",
+      "target": ".governance/error/GOV-IDLE-TAKEOVER.md",
+      "strategy": "managed",
+      "executable": false
     },
     {
       "source": "error/GOV-INTENT.md",

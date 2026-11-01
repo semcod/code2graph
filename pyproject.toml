@@ -29,8 +29,8 @@ where = ["."]
 include = ["code2graph*"]
 
 [tool.wellmanifest]
-standard = "0.20.119"
-revision = "07d2cf4c34ea308929a6a2c78497f20901a58b3e"
+standard = "0.20.129"
+revision = "82fd58dbe175f90146ed49c07fa86fac91de00d5"
 gate = "project/governance-check.sh"
 
 [tool.pytest.ini_options]

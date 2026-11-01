@@ -76,18 +76,18 @@ POLICY_DSL_LOCK = {
     "schema": "new-project.policy-dsl-lock/v1",
     "dependency": {
         "id": "wellmanifest/policy-dsl",
-        "version": "0.1.0-dev",
+        "version": "0.2.0-dev",
         "sourceRepository": "wellmanifest/policy-dsl",
-        "sourceRevision": "daaf7b7b96312a2469de1b4799f2f81c7396de4e",
+        "sourceRevision": "0ffa41efd903d3e0fc3dbf4431f2771b34c1f70e",
         "sourcePath": "tests/policy_dsl_check.py",
-        "sourceSha256": "1ebed8ada3f687bf82de235b352ec1ce94b606887ad2a1657d66bd58f04314e8",
+        "sourceSha256": "15439706ef54953ff90a20bbd2a89c9fef2e6ef9ec7a423025d9d597c78a848c"
     },
     "installation": {
         "packageSourcePath": "scripts/policy_dsl_check.py",
         "managedTargetPath": ".governance/policy_dsl_check.py",
         "lockTargetPath": ".governance/policy-dsl.lock.json",
-        "networkRequired": False,
-    },
+        "networkRequired": False
+    }
 }
 ACTIVE_DEFAULT = {"IN_PROGRESS"}
 TICKET_ACTIVITY_ERROR = "GOV-TICKET-ACTIVITY-001"
@@ -448,7 +448,12 @@ def check_required_checks_declaration(root: Path, report: Report) -> None:
         if spec is None or spec.loader is None:
             raise ValueError("required-checks gate cannot be imported")
         module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        previous_bytecode_policy = sys.dont_write_bytecode
+        try:
+            sys.dont_write_bytecode = True
+            spec.loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = previous_bytecode_policy
         code = module.main(["--root", str(root)])
     except SystemExit as error:
         code = error.code if isinstance(error.code, int) else 1
@@ -966,7 +971,7 @@ def check_physical_contract_changes(
         )
 
 
-PLACEMENT_HOMES = {"wellmanifest", "subactor", "semcod", "paxlet-com"}
+PLACEMENT_HOMES = {"wellmanifest", "subactor", "semcod", "paxlet-com", "dockuri"}
 PLACEMENT_SHAPES = {"domain_pack", "runtime_service", "both"}
 PLACEMENT_ADOPT = re.compile(r"^wellmanifest/[a-z0-9][a-z0-9-]*$")
 
@@ -984,7 +989,7 @@ def placement_error(value: Any) -> str | None:
     if runtime_owner is not None and runtime_owner not in PLACEMENT_HOMES:
         return "placement runtimeOwner is invalid"
     if value["home"] == "wellmanifest" and value["shape"] == "runtime_service":
-        return "runtime_service must not HOME wellmanifest; ADOPT packs from subactor or semcod"
+        return "runtime_service must not HOME wellmanifest; ADOPT packs from a product organization"
     adopt = value.get("adopt")
     if adopt is not None and (
         not string_list(adopt) or not all(PLACEMENT_ADOPT.fullmatch(item) for item in adopt)
@@ -1546,12 +1551,27 @@ def integration_policy_valid(integration: Any, workstreams: dict[str, Any]) -> b
     )
 
 
+def idle_takeover_policy_valid(policy: Any) -> bool:
+    def bounded(value: Any, low: int, high: int) -> bool:
+        return isinstance(value, int) and not isinstance(value, bool) and low <= value <= high
+    return (
+        isinstance(policy, dict)
+        and set(policy) == {"enabled", "idleMinutes", "leaseMinutes"}
+        and isinstance(policy["enabled"], bool)
+        and bounded(policy["idleMinutes"], 5, 240)
+        and bounded(policy["leaseMinutes"], 15, 480)
+        and policy["leaseMinutes"] > policy["idleMinutes"]
+    )
+
+
 def coordination_policy_valid(coordination: Any) -> bool:
     fields = {
         "mode", "maxActiveTicketsPerWorkstream", "rejectActiveScopeOverlap",
         "workstreams", "integration",
     }
-    if not isinstance(coordination, dict) or set(coordination) != fields:
+    if not isinstance(coordination, dict) or set(coordination) - {"idleTakeover"} != fields:
+        return False
+    if "idleTakeover" in coordination and not idle_takeover_policy_valid(coordination["idleTakeover"]):
         return False
     limit = coordination.get("maxActiveTicketsPerWorkstream")
     settings_valid = (
@@ -3271,12 +3291,13 @@ def find_python_secrets(tree: ast.AST) -> list[str]:
                     if is_secret_literal(v):
                         add_field(k.value)
         elif isinstance(node, ast.Compare):
-            if isinstance(node.left, ast.Name) and SECRET_FIELD_NAME_RE.search(node.left.id):
-                for comp in node.comparators:
-                    if is_secret_literal(comp):
-                        add_field(node.left.id)
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            pos_args = node.args.args
+            operands = [node.left, *node.comparators]
+            literal = next((value for value in operands if is_secret_literal(value)), None)
+            if literal is not None:
+                for target in operands:
+                    assigned_literal(target, literal)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            pos_args = [*node.args.posonlyargs, *node.args.args]
             defaults = node.args.defaults
             for arg, default in zip(pos_args[-len(defaults):], defaults):
                 if SECRET_FIELD_NAME_RE.search(arg.arg) and is_secret_literal(default):
@@ -4899,7 +4920,12 @@ def check_change_lease(root: Path, report: Report) -> None:
         return
     module = importlib.util.module_from_spec(spec)
     try:
-        spec.loader.exec_module(module)
+        previous_bytecode_policy = sys.dont_write_bytecode
+        try:
+            sys.dont_write_bytecode = True
+            spec.loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = previous_bytecode_policy
         findings = module.validate_repository(root)
     except Exception as error:
         report.add(
@@ -5068,8 +5094,25 @@ def compute_preflight_cache_key(
     profiles_path: Path | None,
     work_classification_path: Path | None,
 ) -> str | None:
+    # A Git dirty digest cannot bind external ticket input, including SQLite WAL.
+    # Let the ordinary reader recheck its current contents and snapshot pins.
+    if not args.base or any((args.ticket_database, args.ticket_snapshot, args.ticket_snapshot_sha256)):
+        return None
+    try:
+        storage = git_output(root, ["config", "--local", "--get", "new-project.ticketStorage"]).decode().strip()
+    except subprocess.CalledProcessError as error:
+        if error.returncode != 1:
+            return None
+        storage = "files"
+    except (OSError, UnicodeError):
+        return None
+    if storage != "files":
+        return None
+
     head_sha = git_rev_parse(root, args.head or "HEAD")
-    base_sha = git_rev_parse(root, args.base) if args.base else "inferred"
+    base_sha = git_rev_parse(root, args.base)
+    if head_sha.startswith("unresolved:") or base_sha.startswith("unresolved:"):
+        return None
     dirty_digest = compute_git_dirty_digest(root)
     if dirty_digest == "git-status-failed":
         return None
