@@ -21,6 +21,17 @@ classifiers = [
 ]
 dependencies = []
 
+[tool.setuptools]
+py-modules = ["wellmanifest_governance"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["code2graph*"]
+
+[tool.wellmanifest]
+standard = "0.20.131"
+revision = "3926cecf965cd03a39cc992aa40bf82ae2e97a13"
+gate = "project/governance-check.sh"
+
+[tool.pytest.ini_options]
+addopts = "-p wellmanifest_governance"
